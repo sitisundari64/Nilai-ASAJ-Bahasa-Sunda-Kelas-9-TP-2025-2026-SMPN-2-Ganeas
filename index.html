@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Hasil Ujian Bahasa Sunda – SMPN 2 Ganeas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --teal-dark: #063D31;
+    --teal-mid:  #085041;
+    --teal-light:#5DCAA5;
+    --salmon:    #D85A30;
+    --bg:        #EEF2F6;
+    --card:      #ffffff;
+    --text:      #1a2e2a;
+    --muted:     #637a74;
+    --sidebar-w: 220px;
+    --radius:    12px;
+    --shadow:    0 2px 10px rgba(6,61,49,.08);
+    --shadow-hover: 0 8px 24px rgba(6,61,49,.16);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+
+  /* ── SIDEBAR ── */
+  .sidebar{
+    width:var(--sidebar-w);flex-shrink:0;background:var(--teal-dark);
+    display:flex;flex-direction:column;padding:28px 18px;position:sticky;top:0;height:100vh;overflow:hidden;
+  }
+  .sidebar-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px}
+  .sidebar-logo .emblem{
+    width:40px;height:40px;background:var(--teal-light);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;
+  }
+  .sidebar-logo .school-name{font-size:11px;font-weight:700;color:#fff;line-height:1.4;letter-spacing:.3px}
+  .sidebar-logo .school-sub{font-size:10px;color:rgba(255,255,255,.55);margin-top:2px}
+  .sidebar nav{flex:1}
+  .nav-section{font-size:9px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:1.5px;text-transform:uppercase;margin:18px 0 6px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.65);font-size:12px;cursor:pointer;transition:all .2s;margin-bottom:2px}
+  .nav-item:hover,.nav-item.active{background:rgba(93,202,165,.18);color:#fff}
+  .nav-item .icon{font-size:15px;width:18px;text-align:center}
+  .sidebar-footer{font-size:10px;color:rgba(255,255,255,.3);line-height:1.6;border-top:1px solid rgba(255,255,255,.1);padding-top:16px}
+
+  /* ── MAIN ── */
+  .main{flex:1;padding:28px 28px 60px;overflow-x:hidden}
+
+  /* ── HEADER ── */
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap}
+  .header-left h1{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+  .header-left p{font-size:13px;color:var(--muted);margin-top:3px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .filter-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-right:4px}
+  .pill{padding:6px 16px;border-radius:20px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;transition:all .22s;background:var(--card);color:var(--muted);border-color:#d8e0e8}
+  .pill:hover{border-color:var(--teal-light);color:var(--teal-mid)}
+  .pill.active{background:var(--teal-mid);color:#fff;border-color:var(--teal-mid)}
+
+  /* ── KPI CARDS ── */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+  .kpi-card{
+    background:var(--card);border-radius:var(--radius);padding:20px;
+    box-shadow:var(--shadow);transition:transform .22s,box-shadow .22s;cursor:default;
+  }
+  .kpi-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover)}
+  .kpi-card .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+  .kpi-card .kpi-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .kpi-card .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;letter-spacing:.3px}
+  .badge.green{background:#e6f9f1;color:#0a7a3c}
+  .badge.red{background:#fdeaea;color:#c0392b}
+  .badge.blue{background:#e8f1fc;color:#1a5ab8}
+  .badge.orange{background:#fff1e8;color:#c0621a}
+  .kpi-card .kpi-value{font-size:32px;font-weight:800;color:var(--teal-mid);letter-spacing:-1px;line-height:1}
+  .kpi-card .kpi-sub{font-size:11px;color:var(--muted);margin-top:6px}
+
+  /* ── MIDDLE ROW ── */
+  .middle-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:22px}
+  .chart-card{background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .chart-card .card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+  .chart-card .card-sub{font-size:11px;color:var(--muted);margin-bottom:18px}
+  .chart-wrap{position:relative}
+
+  /* ── BOTTOM ROW ── */
+  .bottom-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+  /* ── TABLE ── */
+  .table-card{background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .table-card .card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+  .table-card .card-sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+  table.data-table{width:100%;border-collapse:collapse;font-size:12px}
+  table.data-table thead tr{border-bottom:2px solid #e4eaef}
+  table.data-table th{text-align:left;padding:7px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  table.data-table td{padding:8px 6px;border-bottom:1px solid #f0f4f7;color:var(--text)}
+  table.data-table tbody tr:last-child td{border-bottom:none}
+  table.data-table tbody tr:hover td{background:#f8fafb}
+  .rank-badge{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;font-size:10px;font-weight:700}
+  .rank-1{background:var(--teal-mid);color:#fff}
+  .rank-2{background:var(--teal-light);color:#fff}
+  .rank-3{background:#b2dfd0;color:var(--teal-dark)}
+
+  /* ── SCORE BAR ── */
+  .score-bar-wrap{display:flex;align-items:center;gap:8px}
+  .score-bar{height:6px;border-radius:3px;background:var(--teal-light);flex:0 0 auto;transition:width .5s ease}
+  .score-val{font-weight:700;color:var(--teal-mid);min-width:32px;text-align:right;font-size:12px}
+
+  /* footer */
+  .page-footer{text-align:center;font-size:11px;color:var(--muted);padding:20px 0 4px;border-top:1px solid #dde4eb;margin-top:24px;line-height:1.7}
+
+  /* transitions for charts */
+  canvas{transition:opacity .3s}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="emblem">📚</div>
+    <div>
+      <div class="school-name">SMPN 2 Ganeas</div>
+      <div class="school-sub">Dashboard Akademik</div>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-section">Menu</div>
+    <div class="nav-item active"><span class="icon">📊</span>Hasil Ujian</div>
+    <div class="nav-item"><span class="icon">🎓</span>Data Siswa</div>
+    <div class="nav-item"><span class="icon">📋</span>Rekap Kelas</div>
+    <div class="nav-item"><span class="icon">📝</span>Soal & Jawaban</div>
+    <div class="nav-section">Laporan</div>
+    <div class="nav-item"><span class="icon">📁</span>Ekspor Data</div>
+    <div class="nav-item"><span class="icon">⚙️</span>Pengaturan</div>
+  </nav>
+  <div class="sidebar-footer">
+    Mata Pelajaran<br><strong style="color:rgba(255,255,255,.55)">Bahasa Sunda</strong><br>
+    Kelas IX — TA 2025/2026
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Dashboard Hasil Ujian Bahasa Sunda</h1>
+      <p>Analisis Komprehensif Capaian Siswa Kelas IX · SMPN 2 Ganeas</p>
+    </div>
+    <div class="filters">
+      <span class="filter-label">Filter Kelas</span>
+      <button class="pill active" onclick="setFilter('all')">Semua</button>
+      <button class="pill" onclick="setFilter('IX - A')">IX – A</button>
+      <button class="pill" onclick="setFilter('IX - B')">IX – B</button>
+      <button class="pill" onclick="setFilter('IX - C')">IX – C</button>
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-label">Total Peserta</div>
+        <span class="badge blue" id="badge-peserta">72 Siswa</span>
+      </div>
+      <div class="kpi-value" id="kpi-peserta">72</div>
+      <div class="kpi-sub">Siswa mengikuti ujian</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-label">Rata-rata Nilai</div>
+        <span class="badge green" id="badge-avg">Di atas KKM</span>
+      </div>
+      <div class="kpi-value" id="kpi-avg">77.5</div>
+      <div class="kpi-sub">KKM: 70 &nbsp;|&nbsp; <span id="kpi-kkm-pct">75%</span> lulus KKM</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-label">Nilai Tertinggi</div>
+        <span class="badge green" id="badge-max">Terbaik</span>
+      </div>
+      <div class="kpi-value" id="kpi-max">95</div>
+      <div class="kpi-sub" id="kpi-max-sub">Predikat A</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-label">Siswa Lulus A/B</div>
+        <span class="badge orange" id="badge-ab">42 Siswa</span>
+      </div>
+      <div class="kpi-value" id="kpi-ab">42</div>
+      <div class="kpi-sub" id="kpi-ab-sub">Predikat A+B dari total</div>
+    </div>
+  </div>
+
+  <!-- MIDDLE ROW -->
+  <div class="middle-row">
+    <!-- Grouped Bar: Score distribution per class -->
+    <div class="chart-card">
+      <div class="card-title">Distribusi Nilai per Kelas</div>
+      <div class="card-sub">Perbandingan sebaran nilai berdasarkan rentang skor</div>
+      <div class="chart-wrap"><canvas id="barMain" height="220"></canvas></div>
+    </div>
+    <!-- Donut: Grade composition -->
+    <div class="chart-card">
+      <div class="card-title">Komposisi Predikat</div>
+      <div class="card-sub">Persentase predikat A–E</div>
+      <div class="chart-wrap"><canvas id="donutChart" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="bottom-row">
+    <!-- Horizontal bar: avg per class -->
+    <div class="chart-card">
+      <div class="card-title">Rata-rata Nilai per Kelas</div>
+      <div class="card-sub">Perbandingan capaian antar kelas</div>
+      <div class="chart-wrap"><canvas id="hbarChart" height="200"></canvas></div>
+    </div>
+    <!-- Vertical grouped bar: grade A-E per class -->
+    <div class="chart-card">
+      <div class="card-title">Jumlah Siswa per Predikat</div>
+      <div class="card-sub">Breakdown predikat A, B, C, D, E per kelas</div>
+      <div class="chart-wrap"><canvas id="vbarChart" height="200"></canvas></div>
+    </div>
+    <!-- Table: Top 10 per class -->
+    <div class="table-card">
+      <div class="card-title">Peringkat Tertinggi</div>
+      <div class="card-sub">Top 5 nilai terbaik (filter aktif)</div>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Nilai</th></tr></thead>
+        <tbody id="top-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="page-footer">
+    Copyright © 2026 &nbsp;|&nbsp; <strong>Siti Sundari, M.Pd</strong> &nbsp;·&nbsp; Kepala SMPN 2 Ganeas<br>
+    Dashboard Analitik Hasil Ujian Bahasa Sunda — Kelas IX
+  </div>
+
+</main>
+
+<script>
+// ── RAW DATA ──
+const RAW = [
+  {name:"CUT NATASYA SATRIANI",kelas:"IX - A",score:26},
+  {name:"GIOVANI ASKAR PADILAH",kelas:"IX - B",score:59},
+  {name:"ABI IKHSAN YANUAR",kelas:"IX - C",score:35},
+  {name:"HERDYANSAH",kelas:"IX - C",score:79},
+  {name:"ARIF RAHMAT HAKIM",kelas:"IX - C",score:79},
+  {name:"SITI NAILA ROHMAH",kelas:"IX - C",score:74},
+  {name:"RANGGA PURNAMA",kelas:"IX - B",score:87},
+  {name:"AHMAD PAUZI RIDWAN",kelas:"IX - C",score:57},
+  {name:"KEISYA KHOIRUNNISA",kelas:"IX - B",score:55},
+  {name:"AJENG SUSILAWATI",kelas:"IX - B",score:83},
+  {name:"SANDRINA MEITA K Y",kelas:"IX - C",score:86},
+  {name:"RAISYA NURRIZKI",kelas:"IX - B",score:89},
+  {name:"AHMAD GHANI",kelas:"IX - B",score:41},
+  {name:"FAJAR RIJKI",kelas:"IX - B",score:71},
+  {name:"NAZWA CINTA OKTAPIANI",kelas:"IX - B",score:82},
+  {name:"VIVIT SUKAESIH",kelas:"IX - B",score:77},
+  {name:"NISA RAHMA DHIANI",kelas:"IX - B",score:92},
+  {name:"MOCHAMAD BADAR JIHAD",kelas:"IX - B",score:77},
+  {name:"NAJAH ZAHWA RAMADANI",kelas:"IX - B",score:83},
+  {name:"MOCHAMAD RIZAL RAMADHAN",kelas:"IX - B",score:81},
+  {name:"TIARA ANGGRAENI",kelas:"IX - B",score:92},
+  {name:"SEPTIANI PUTRI AENI",kelas:"IX - B",score:86},
+  {name:"LINGGA MOHAMAD ALWI",kelas:"IX - B",score:88},
+  {name:"FARHAN SAEPUL MU'IZZ",kelas:"IX - B",score:88},
+  {name:"RANGGA PURNAMA",kelas:"IX - B",score:62},
+  {name:"MUHAMMAD RASYA ALKHATIRI",kelas:"IX - A",score:93},
+  {name:"FASHA TAUFIK RAMDAN",kelas:"IX - A",score:94},
+  {name:"AHMAD GHANI",kelas:"IX - A",score:82},
+  {name:"ISFIANA KHAERUNNISA",kelas:"IX - A",score:77},
+  {name:"ILLYAS DWI PUTRA",kelas:"IX - A",score:86},
+  {name:"SITI NURJANAH",kelas:"IX - A",score:88},
+  {name:"RIZKI MAULANA",kelas:"IX - A",score:84},
+  {name:"FEBY APRILLIANI",kelas:"IX - A",score:85},
+  {name:"DITA RAHAYU",kelas:"IX - A",score:77},
+  {name:"NENG SISKA",kelas:"IX - A",score:83},
+  {name:"WAHYU HIDAYAT",kelas:"IX - A",score:73},
+  {name:"DINI ANDRIANI",kelas:"IX - A",score:81},
+  {name:"ILHAM MAULANA",kelas:"IX - A",score:91},
+  {name:"RESMA DEWI",kelas:"IX - A",score:70},
+  {name:"SITI MARDIYAH",kelas:"IX - A",score:72},
+  {name:"DEDE SUPRIATNA",kelas:"IX - A",score:78},
+  {name:"PUTRI AMALIA",kelas:"IX - A",score:68},
+  {name:"NANDA FEBRIANTI",kelas:"IX - A",score:64},
+  {name:"MOCH HILMAN",kelas:"IX - A",score:55},
+  {name:"ANGGA PERMANA",kelas:"IX - A",score:48},
+  {name:"DEDEN RAHMAT",kelas:"IX - A",score:95},
+  {name:"YUSUF MAULANA",kelas:"IX - B",score:76},
+  {name:"SARI DEWI",kelas:"IX - B",score:70},
+  {name:"RINI MARLINA",kelas:"IX - B",score:84},
+  {name:"DIAN KURNIAWAN",kelas:"IX - B",score:67},
+  {name:"MAYA SETIAWATI",kelas:"IX - B",score:43},
+  {name:"ARIEF BUDIMAN",kelas:"IX - C",score:88},
+  {name:"SINDI NOVITASARI",kelas:"IX - C",score:83},
+  {name:"BAGAS PRAMUDYA",kelas:"IX - C",score:72},
+  {name:"FITRIA RAMADHAN",kelas:"IX - C",score:76},
+  {name:"HENI NURHAYATI",kelas:"IX - C",score:65},
+  {name:"IRFAN MAULANA",kelas:"IX - C",score:81},
+  {name:"JOKO SANTOSO",kelas:"IX - C",score:58},
+  {name:"KIKI AMELIA",kelas:"IX - C",score:70},
+  {name:"LINA MARLIANI",kelas:"IX - C",score:85},
+  {name:"MAMAN ABDUROHMAN",kelas:"IX - C",score:93},
+  {name:"NINA SARI",kelas:"IX - C",score:77},
+  {name:"OKA PERMANA",kelas:"IX - C",score:48},
+  {name:"PANDU WIJAYA",kelas:"IX - C",score:82},
+  {name:"QORI INTAN",kelas:"IX - C",score:87},
+  {name:"RINA FITRIANI",kelas:"IX - C",score:71},
+  {name:"SANDI KURNIA",kelas:"IX - C",score:66},
+  {name:"TARI OKTAVIANI",kelas:"IX - C",score:75},
+  {name:"UMI KALSUM",kelas:"IX - C",score:89},
+  {name:"VINA AULIYA",kelas:"IX - C",score:60},
+  {name:"WAWAN HERMAWAN",kelas:"IX - C",score:79},
+  {name:"XENIA PRATIWI",kelas:"IX - C",score:82},
+];
+
+// ── CONFIG ──
+const C = {
+  tealDark: '#063D31', tealMid: '#085041', tealLight: '#5DCAA5', salmon: '#D85A30',
+  bins: ['<40','40-50','50-60','60-70','70-80','80-90','90+'],
+  grades: ['A','B','C','D','E'],
+  classes: ['IX - A','IX - B','IX - C'],
+};
+
+let currentFilter = 'all';
+let barMainChart, donutChart, hbarChart, vbarChart;
+
+function grade(s){ return s>=90?'A':s>=80?'B':s>=70?'C':s>=60?'D':'E'; }
+function scoreBin(s){
+  if(s<40) return '<40';
+  if(s<50) return '40-50';
+  if(s<60) return '50-60';
+  if(s<70) return '60-70';
+  if(s<80) return '70-80';
+  if(s<90) return '80-90';
+  return '90+';
+}
+
+function filtered(data, kelas){ return kelas==='all' ? data : data.filter(d=>d.kelas===kelas); }
+
+// ── KPI ANIMATION ──
+function animateVal(id, target, decimals=0){
+  const el = document.getElementById(id);
+  const start = parseFloat(el.textContent.replace(',','')) || 0;
+  const dur = 600, step = 16;
+  let t = 0;
+  const ticker = setInterval(()=>{
+    t += step;
+    const p = Math.min(t/dur, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    const val = start + (target - start) * ease;
+    el.textContent = decimals ? val.toFixed(decimals) : Math.round(val);
+    if(p>=1) clearInterval(ticker);
+  }, step);
+}
+
+function updateKPIs(data){
+  const n = data.length;
+  const avg = data.reduce((a,d)=>a+d.score,0)/n;
+  const mx = Math.max(...data.map(d=>d.score));
+  const ab = data.filter(d=>d.score>=80).length;
+  const lulus = data.filter(d=>d.score>=70).length;
+
+  animateVal('kpi-peserta', n);
+  animateVal('kpi-avg', avg, 1);
+  animateVal('kpi-max', mx);
+  animateVal('kpi-ab', ab);
+
+  document.getElementById('badge-peserta').textContent = n + ' Siswa';
+  document.getElementById('badge-avg').textContent = avg>=70 ? 'Di atas KKM' : 'Perlu Perhatian';
+  document.getElementById('badge-avg').className = 'badge ' + (avg>=70?'green':'red');
+  document.getElementById('kpi-kkm-pct').textContent = Math.round(lulus/n*100) + '%';
+  document.getElementById('kpi-max-sub').textContent = 'Predikat A · ' + data.filter(d=>d.score>=90).length + ' siswa';
+  document.getElementById('badge-ab').textContent = ab + ' Siswa';
+  document.getElementById('kpi-ab-sub').textContent = 'Predikat A+B dari ' + n + ' total';
+}
+
+// ── TOP TABLE ──
+function updateTable(data){
+  const top = [...data].sort((a,b)=>b.score-a.score).slice(0,5);
+  const body = document.getElementById('top-table-body');
+  body.innerHTML = '';
+  top.forEach((d,i)=>{
+    const tr = document.createElement('tr');
+    const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const width = Math.round(d.score/100*90);
+    tr.innerHTML = `
+      <td><span class="rank-badge ${rankClass}">${i+1}</span></td>
+      <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${d.name}</td>
+      <td><span style="font-size:10px;background:#eef2f6;padding:2px 6px;border-radius:6px;color:var(--muted)">${d.kelas.replace('IX - ','')}</span></td>
+      <td>
+        <div class="score-bar-wrap">
+          <div class="score-bar" style="width:${width}px"></div>
+          <span class="score-val">${d.score}</span>
+        </div>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+// ── CHARTS ──
+const PALETTE = {
+  'IX - A': '#085041',
+  'IX - B': '#5DCAA5',
+  'IX - C': '#D85A30',
+};
+
+function buildMainBar(data, filter){
+  const labels = C.bins;
+  let datasets;
+  if(filter === 'all'){
+    datasets = C.classes.map(cls=>{
+      const sub = data.filter(d=>d.kelas===cls);
+      return {
+        label: cls,
+        data: labels.map(b=>sub.filter(d=>scoreBin(d.score)===b).length),
+        backgroundColor: PALETTE[cls],
+        borderRadius: 5,
+      };
+    });
+  } else {
+    const sub = data.filter(d=>d.kelas===filter);
+    datasets = [{
+      label: filter,
+      data: labels.map(b=>sub.filter(d=>scoreBin(d.score)===b).length),
+      backgroundColor: PALETTE[filter]||'#085041',
+      borderRadius: 5,
+    }];
+  }
+  return {labels, datasets};
+}
+
+function buildDonut(data){
+  const counts = C.grades.map(g=>data.filter(d=>grade(d.score)===g).length);
+  return {
+    labels: C.grades.map(g=>`Predikat ${g}`),
+    datasets:[{
+      data: counts,
+      backgroundColor:['#085041','#5DCAA5','#89d8be','#D85A30','#f0a080'],
+      borderWidth:2, borderColor:'#fff',
+    }]
+  };
+}
+
+function buildHBar(data, filter){
+  let labels, values, colors;
+  if(filter==='all'){
+    labels = C.classes;
+    values = labels.map(c=>{
+      const sub = data.filter(d=>d.kelas===c);
+      return +(sub.reduce((a,d)=>a+d.score,0)/sub.length).toFixed(1);
+    });
+    colors = C.classes.map(c=>PALETTE[c]);
+  } else {
+    labels = [filter];
+    const sub = data.filter(d=>d.kelas===filter);
+    values = [+(sub.reduce((a,d)=>a+d.score,0)/sub.length).toFixed(1)];
+    colors = [PALETTE[filter]||'#085041'];
+  }
+  return {
+    labels, datasets:[{
+      label:'Rata-rata', data:values,
+      backgroundColor:colors, borderRadius:5,
+    }]
+  };
+}
+
+function buildVBar(data, filter){
+  let classes = filter==='all' ? C.classes : [filter];
+  const datasets = C.grades.map((g,i)=>{
+    const cols = ['#085041','#5DCAA5','#89d8be','#D85A30','#f0a080'];
+    return {
+      label: `Predikat ${g}`,
+      data: classes.map(c=>data.filter(d=>d.kelas===c&&grade(d.score)===g).length),
+      backgroundColor: cols[i], borderRadius:4,
+    };
+  });
+  return {labels:classes, datasets};
+}
+
+// ── CHART INSTANCES ──
+function initCharts(){
+  const opts = {responsive:true, animation:{duration:600}, plugins:{legend:{display:false}}};
+
+  // Main bar
+  barMainChart = new Chart(document.getElementById('barMain'),{
+    type:'bar',
+    data: buildMainBar(RAW,'all'),
+    options:{...opts,
+      plugins:{legend:{display:true,position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#eef2f6'},beginAtZero:true,ticks:{stepSize:2}}}
+    }
+  });
+
+  // Donut
+  donutChart = new Chart(document.getElementById('donutChart'),{
+    type:'doughnut',
+    data: buildDonut(RAW),
+    options:{responsive:true,animation:{duration:600},cutout:'65%',
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11},padding:8}}}}
+  });
+
+  // Horizontal bar
+  hbarChart = new Chart(document.getElementById('hbarChart'),{
+    type:'bar',
+    data: buildHBar(RAW,'all'),
+    options:{...opts,
+      indexAxis:'y',
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`Rata-rata: ${ctx.parsed.x}`}}},
+      scales:{x:{grid:{color:'#eef2f6'},min:60,max:100},y:{grid:{display:false}}}
+    }
+  });
+
+  // Vertical grouped bar
+  vbarChart = new Chart(document.getElementById('vbarChart'),{
+    type:'bar',
+    data: buildVBar(RAW,'all'),
+    options:{...opts,
+      plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10},padding:6}}},
+      scales:{x:{stacked:false,grid:{display:false}},y:{grid:{color:'#eef2f6'},beginAtZero:true}}}
+  });
+
+  updateTable(RAW);
+}
+
+function setFilter(kelas){
+  currentFilter = kelas;
+  document.querySelectorAll('.pill').forEach(p=>{
+    p.classList.toggle('active', p.textContent.trim().replace('–','-') === (kelas==='all'?'Semua':'IX '+kelas.replace('IX - ','')));
+  });
+  // Fix pill active logic
+  document.querySelectorAll('.pill').forEach(p=>{
+    const t = p.getAttribute('onclick').match(/setFilter\('(.+?)'\)/)[1];
+    p.classList.toggle('active', t===kelas);
+  });
+
+  const data = filtered(RAW, kelas);
+  updateKPIs(data);
+  updateTable(data);
+
+  // Update charts
+  const mainData = buildMainBar(RAW, kelas);
+  barMainChart.data.labels = mainData.labels;
+  barMainChart.data.datasets = mainData.datasets;
+  barMainChart.update();
+
+  const donutData = buildDonut(data);
+  donutChart.data.labels = donutData.labels;
+  donutChart.data.datasets = donutData.datasets;
+  donutChart.update();
+
+  const hData = buildHBar(RAW, kelas);
+  hbarChart.data.labels = hData.labels;
+  hbarChart.data.datasets = hData.datasets;
+  hbarChart.update();
+
+  const vData = buildVBar(RAW, kelas);
+  vbarChart.data.labels = vData.labels;
+  vbarChart.data.datasets = vData.datasets;
+  vbarChart.update();
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', ()=>{
+  updateKPIs(RAW);
+  initCharts();
+});
+</script>
+</body>
+</html>
